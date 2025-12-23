@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 3.0.0
+    hooks:
+      #  - id: shellcheck
+      #   files: ^scripts/.*\.(sh|bash)$
+      #- id: shfmt
+      #  files: ^scripts/.*\.(sh|bash)$
+          #  - id: yamllint
+          # files: ^\.github/workflows/.*\.yml$
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: ["-S", ".git,.venv,repo/*"]

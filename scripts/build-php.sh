@@ -19,8 +19,11 @@ fi
 mkdir -p "$OUT_DIR"
 
 # Base toolchain
-apt-get update
-apt-get install -y --no-install-recommends git devscripts dpkg-dev build-essential fakeroot python3 dh-php quilt pkg-config flex bison
+export DEBIAN_FRONTEND=noninteractive
+export TZ=Etc/UTC
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get update
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y --no-install-recommends tzdata
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y --no-install-recommends git devscripts dpkg-dev build-essential fakeroot python3 dh-php quilt pkg-config flex bison
 
 # Add ondrej/php PPA (both deb and deb-src)
 "$(dirname "$0")/setup-ondrej-ppa.sh" "$DIST"
@@ -30,13 +33,21 @@ add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu ${DIST} universe"
 add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu ${DIST} multiverse"
 add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu ${DIST}-updates universe"
 add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse" || true
-apt-get update
+
+# Ensure deb-src entries exist (required for apt-get source and build-deps)
+# Try to uncomment if present, otherwise add explicit deb-src repositories.
+sed -i 's/^#\s*deb-src /deb-src /' /etc/apt/sources.list || true
+add-apt-repository -y "deb-src http://archive.ubuntu.com/ubuntu ${DIST} main restricted universe multiverse" || true
+add-apt-repository -y "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-updates main restricted universe multiverse" || true
+add-apt-repository -y "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse" || true
+
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get update
 
 # Try to fetch version-specific source package, fallback to generic 'php'
 PKG_NAME="php${PHP_VER}"
-if ! apt-get -y source "$PKG_NAME"; then
+if ! DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y source "$PKG_NAME"; then
   echo "Falling back to 'php' source package" >&2
-  apt-get -y source php
+  DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y source php
   PKG_NAME="php"
 fi
 
@@ -50,8 +61,8 @@ fi
 cd "$SRC_DIR"
 
 # Install build-deps from debian/control using mk-build-deps
-apt-get install -y --no-install-recommends equivs
-mk-build-deps -i -t "apt-get -y --no-install-recommends" debian/control
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y --no-install-recommends equivs
+mk-build-deps -i -t "DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y --no-install-recommends" debian/control
 
 # Build binary packages (no signing of .changes)
 debuild -b -uc -us
