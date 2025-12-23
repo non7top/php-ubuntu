@@ -1,0 +1,17 @@
+Origin: GitHub Pages PHP PPA
+Label: gh-pages-php-ppa
+Suite: stable
+Codename: focal
+Architectures: amd64 source
+Components: main
+Description: PHP packages built via GitHub Actions for Ubuntu 20.04
+SignWith: ${APT_GPG_KEY_ID}
+
+Origin: GitHub Pages PHP PPA
+Label: gh-pages-php-ppa
+Suite: stable
+Codename: jammy
+Architectures: amd64 source
+Components: main
+Description: PHP packages built via GitHub Actions for Ubuntu 22.04
+SignWith: ${APT_GPG_KEY_ID}
