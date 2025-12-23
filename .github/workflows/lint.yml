@@ -19,7 +19,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends shellcheck
 
+      - name: Download actionlint
+        run: |
+          mkdir -p bin
+          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash -o bin/download-actionlint.bash
+          bash bin/download-actionlint.bash -b bin
+          ./bin/actionlint -version
+
       - name: Run actionlint
-        uses: rhysd/actionlint@v1
-        with:
-          color: always
+        run: |
+          ./bin/actionlint -color -verbose
