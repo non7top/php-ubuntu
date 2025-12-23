@@ -29,23 +29,27 @@ apt-get install -y --no-install-recommends tzdata git devscripts dpkg-dev build-
 SCRIPT_DIR="$(dirname "$0")"
 "$SCRIPT_DIR/setup-ondrej-ppa.sh" "$DIST"
 
-# Ensure deb-src entries exist (avoid duplicates)
+
+# Remove duplicate deb-src lines and ensure only one of each
 sed -i 's/^#\s*deb-src /deb-src /' /etc/apt/sources.list || true
-add_deb_src() {
-    local entry="$1"
-    grep -Fxq "$entry" /etc/apt/sources.list || echo "$entry" >> /etc/apt/sources.list
-}
-add_deb_src "deb-src http://archive.ubuntu.com/ubuntu ${DIST} main restricted universe multiverse"
-add_deb_src "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-updates main restricted universe multiverse"
-add_deb_src "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse"
+for repo in \
+  "deb-src http://archive.ubuntu.com/ubuntu ${DIST} main restricted universe multiverse" \
+  "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-updates main restricted universe multiverse" \
+  "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse"
+do
+  grep -vFx "$repo" /etc/apt/sources.list > /etc/apt/sources.list.tmp && mv /etc/apt/sources.list.tmp /etc/apt/sources.list
+  echo "$repo" >> /etc/apt/sources.list
+done
 
 apt-get update
 
-# Try to fetch version-specific source package, fallback to generic 'php'
+# Create a non-root user for apt-get source to avoid _apt warning
+useradd -m builder
+chown -R builder:builder .
+
+# Try to fetch version-specific source package, fallback to generic 'php', as non-root
 PKG_NAME="php${PHP_VER}"
-if ! apt-get -y source "$PKG_NAME"; then
-  apt-get -y source php
-fi
+su builder -c "apt-get -y source $PKG_NAME" || su builder -c "apt-get -y source php"
 
 # Move source tree to output dir
 SRC_DIR=$(find . -maxdepth 1 -type d -name "php*")

@@ -33,8 +33,11 @@ jobs:
 
       - name: Fetch PHP source on jammy
         if: matrix.distro != 'jammy'
-        run: |
-          docker run --rm -v "$PWD/artifacts/source:/out" -v "$PWD/scripts:/scripts" ubuntu:jammy bash /scripts/fetch-php-source.sh "${{ matrix.php }}" /out
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ubuntu:jammy
+          options: -v ${{ github.workspace }}/scripts:/scripts -v ${{ github.workspace }}/artifacts/source:/out
+          run: bash /scripts/fetch-php-source.sh "${{ matrix.php }}" /out
 
       - name: Build PHP
         run: |
