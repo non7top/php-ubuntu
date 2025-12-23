@@ -40,6 +40,10 @@ jobs:
     name: Publish APT repo to pages
     runs-on: ubuntu-latest
     needs: build
+    env:
+      APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+      APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+      APT_GPG_KEY_ID: ${{ secrets.APT_GPG_KEY_ID }}
     steps:
       - name: Checkout default branch
         uses: actions/checkout@v4
@@ -57,10 +61,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends reprepro gnupg
 
       - name: Import GPG key
-        if: ${{ secrets.APT_GPG_PRIVATE_KEY != '' }}
-        env:
-          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
-          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+        if: ${{ env.APT_GPG_PRIVATE_KEY != '' }}
         run: |
           mkdir -p $HOME/.gnupg
           chmod 700 $HOME/.gnupg
@@ -69,8 +70,6 @@ jobs:
           gpgconf --kill gpg-agent || true
 
       - name: Prepare repo structure
-        env:
-          APT_GPG_KEY_ID: ${{ secrets.APT_GPG_KEY_ID }}
         run: |
           set -e
           # Ensure we are on pages branch (create if missing)
