@@ -10,11 +10,11 @@ jobs:
     name: Build PHP packages
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       max-parallel: 1
       matrix:
         distro: [ focal, jammy ]
-        php: [ "8.3", "8.5" ]
+        php: [ "8.3" ]
     container:
       image: ubuntu:${{ matrix.distro }}
     steps:
@@ -31,9 +31,17 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends ca-certificates gnupg software-properties-common curl wget
 
+      - name: Fetch PHP source on jammy
+        if: matrix.distro != 'jammy'
+        run: |
+          docker run --rm -v "$PWD/artifacts/source:/out" -v "$PWD/scripts:/scripts" ubuntu:jammy bash /scripts/fetch-php-source.sh "${{ matrix.php }}" /out
+
       - name: Build PHP
         run: |
           mkdir -p artifacts/${{ matrix.distro }}/${{ matrix.php }}
+          if [ "${{ matrix.distro }}" != "jammy" ] && [ -d artifacts/source ]; then
+            cp -r artifacts/source/php* .
+          fi
           bash scripts/build-php.sh "${{ matrix.distro }}" "${{ matrix.php }}" "artifacts/${{ matrix.distro }}/${{ matrix.php }}"
 
       - name: Upload artifacts

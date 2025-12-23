@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p bin
           curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash -o bin/download-actionlint.bash
-          bash bin/download-actionlint.bash -b bin
+          bash bin/download-actionlint.bash latest bin
           ./bin/actionlint -version
 
       - name: Run actionlint

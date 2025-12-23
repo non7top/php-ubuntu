@@ -34,22 +34,24 @@ add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu ${DIST} multiverse"
 add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu ${DIST}-updates universe"
 add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse" || true
 
+
+
 # Ensure deb-src entries exist (required for apt-get source and build-deps)
-# Try to uncomment if present, otherwise add explicit deb-src repositories.
+# Try to uncomment if present, otherwise add explicit deb-src repositories directly, but avoid duplicates.
 sed -i 's/^#\s*deb-src /deb-src /' /etc/apt/sources.list || true
-add-apt-repository -y "deb-src http://archive.ubuntu.com/ubuntu ${DIST} main restricted universe multiverse" || true
-add-apt-repository -y "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-updates main restricted universe multiverse" || true
-add-apt-repository -y "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse" || true
+add_deb_src() {
+  local entry="$1"
+  grep -Fxq "$entry" /etc/apt/sources.list || echo "$entry" >> /etc/apt/sources.list
+}
+add_deb_src "deb-src http://archive.ubuntu.com/ubuntu ${DIST} main restricted universe multiverse"
+add_deb_src "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-updates main restricted universe multiverse"
+add_deb_src "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse"
 
 DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get update
 
 # Try to fetch version-specific source package, fallback to generic 'php'
 PKG_NAME="php${PHP_VER}"
-if ! DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y source "$PKG_NAME"; then
-  echo "Falling back to 'php' source package" >&2
-  DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y source php
-  PKG_NAME="php"
-fi
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y source "$PKG_NAME"
 
 # Enter source tree
 SRC_DIR=$(find . -maxdepth 1 -type d -name "${PKG_NAME}*" | head -n1)
@@ -62,7 +64,7 @@ cd "$SRC_DIR"
 
 # Install build-deps from debian/control using mk-build-deps
 DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y --no-install-recommends equivs
-mk-build-deps -i -t "DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y --no-install-recommends" debian/control
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC mk-build-deps -i -t "apt-get -y --no-install-recommends" debian/control
 
 # Build binary packages (no signing of .changes)
 debuild -b -uc -us
