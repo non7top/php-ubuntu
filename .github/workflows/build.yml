@@ -2,7 +2,7 @@ name: Build PHP PPA
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
