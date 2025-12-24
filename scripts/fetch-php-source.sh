@@ -44,20 +44,27 @@ done
 apt-get update
 
 
+
 # Create a non-root user for apt-get source to avoid _apt warning
-useradd -m builder
-# Only chown the current working directory (not system dirs)
-chown -R builder:builder "$PWD"
+useradd -m builder || true
+
+# Use a temp directory in /tmp for builder's activity
+BUILDER_TMPDIR="/tmp/php-src-fetch-$$"
+mkdir -p "$BUILDER_TMPDIR"
+chown builder:builder "$BUILDER_TMPDIR"
+cd "$BUILDER_TMPDIR"
 
 # Try to fetch version-specific source package, fallback to generic 'php', as non-root
 PKG_NAME="php${PHP_VER}"
 su builder -c "apt-get -y source $PKG_NAME" || su builder -c "apt-get -y source php"
 
 # Move source tree to output dir
-SRC_DIR=$(find . -maxdepth 1 -type d -name "php*")
+SRC_DIR=$(find "$BUILDER_TMPDIR" -maxdepth 1 -type d -name "php*")
 if [[ -z "$SRC_DIR" ]]; then
   echo "Source directory not found for $PKG_NAME or php" >&2
-  ls -la
-  exit 2
+  ls -la "$BUILDER_TMPDIR"
 fi
+mv "$SRC_DIR" "$OUT_DIR/"
+# Clean up temp dir
+rm -rf "$BUILDER_TMPDIR"
 mv "$SRC_DIR" "$OUT_DIR/"

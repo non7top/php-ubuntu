@@ -3,7 +3,7 @@
 # You can override these, e.g. `make ACT=act ACT_FLAGS="--pull=false" test`
 ACT ?= act
 PLATFORM ?= ubuntu-latest=catthehacker/ubuntu:act-22.04
-ACT_FLAGS ?= -P $(PLATFORM) --container-architecture linux/amd64
+ACT_FLAGS ?= --rm -P $(PLATFORM) --container-architecture linux/amd64
 SECRETS_FILE ?= .secrets
 
 help:
