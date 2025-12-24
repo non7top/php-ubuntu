@@ -32,6 +32,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends ca-certificates gnupg software-properties-common curl wget
 
+
       - name: Fetch PHP source on jammy
         if: matrix.distro != 'jammy'
         uses: addnab/docker-run-action@v3
@@ -40,11 +41,25 @@ jobs:
           options: -v ${{ github.workspace }}/scripts:/scripts -v ${{ github.workspace }}/artifacts/source:/out
           run: bash /scripts/fetch-php-source.sh "${{ matrix.php }}" /out
 
+      - name: Upload PHP source artifact
+        if: matrix.distro != 'jammy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-source-${{ matrix.php }}
+          path: artifacts/source
+
+      - name: Download PHP source artifact
+        if: matrix.distro != 'jammy'
+        uses: actions/download-artifact@v4
+        with:
+          name: php-source-${{ matrix.php }}
+          path: artifacts/source
+
       - name: Build PHP
         run: |
           mkdir -p artifacts/${{ matrix.distro }}/${{ matrix.php }}
-          echo "== Directory listing before source copy =="
-          ls -l artifacts/source || true
+          echo "== Directory tree under artifacts/source before source copy =="
+          find artifacts/source || true
           if [ "${{ matrix.distro }}" != "jammy" ] && [ -d artifacts/source ]; then
             cp -r artifacts/source/php* .
           fi
