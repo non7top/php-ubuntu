@@ -13,7 +13,8 @@ jobs:
       fail-fast: true
       max-parallel: 1
       matrix:
-        distro: [ focal, jammy ]
+        #distro: [ focal, jammy ]
+        distro: [ focal ]
         php: [ "8.3" ]
     container:
       image: ubuntu:${{ matrix.distro }}
@@ -23,8 +24,8 @@ jobs:
 
       - name: Set noninteractive apt env
         run: |
-          echo 'DEBIAN_FRONTEND=noninteractive' >> $GITHUB_ENV
-          echo 'TZ=Etc/UTC' >> $GITHUB_ENV
+          echo 'DEBIAN_FRONTEND=noninteractive' >> "$GITHUB_ENV"
+          echo 'TZ=Etc/UTC' >> "$GITHUB_ENV"
 
       - name: Install base dependencies
         run: |
@@ -80,10 +81,10 @@ jobs:
       - name: Import GPG key
         if: ${{ env.APT_GPG_PRIVATE_KEY != '' }}
         run: |
-          mkdir -p $HOME/.gnupg
-          chmod 700 $HOME/.gnupg
+          mkdir -p "$HOME/.gnupg"
+          chmod 700 "$HOME/.gnupg"
           echo "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "passphrase=$APT_GPG_PASSPHRASE" > $HOME/.gnupg/gpg-agent.conf || true
+          echo "passphrase=$APT_GPG_PASSPHRASE" > "$HOME/.gnupg/gpg-agent.conf" || true
           gpgconf --kill gpg-agent || true
 
       - name: Prepare repo structure
