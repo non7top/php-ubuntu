@@ -37,9 +37,19 @@ for repo in \
   "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-updates main restricted universe multiverse" \
   "deb-src http://archive.ubuntu.com/ubuntu ${DIST}-backports main restricted universe multiverse"
 do
-  grep -vFx "$repo" /etc/apt/sources.list > /etc/apt/sources.list.tmp && mv /etc/apt/sources.list.tmp /etc/apt/sources.list
-  echo "$repo" >> /etc/apt/sources.list
+  REPO_PATTERN=$(echo "$repo" | sed 's/ /\\s\+/g')
+  echo "Checking for deb-src line: $repo" >&2
+  if grep -E -q "^\s*deb-src\s+$REPO_PATTERN" /etc/apt/sources.list; then
+    echo "SKIP: Already present (pattern: $REPO_PATTERN)" >&2
+  else
+    echo "ADD: $repo" >&2
+    echo "$repo" >> /etc/apt/sources.list
+  fi
 done
+
+# Debug: print the whole sources.list after all changes
+echo "\n===== /etc/apt/sources.list after changes =====" >&2
+cat /etc/apt/sources.list >&2
 
 apt-get update
 
@@ -54,17 +64,34 @@ mkdir -p "$BUILDER_TMPDIR"
 chown builder:builder "$BUILDER_TMPDIR"
 cd "$BUILDER_TMPDIR"
 
-# Try to fetch version-specific source package, fallback to generic 'php', as non-root
+
+
 PKG_NAME="php${PHP_VER}"
-su builder -c "apt-get -y source $PKG_NAME" || su builder -c "apt-get -y source php"
+echo "Fetching source for $PKG_NAME (or fallback to php) as builder user..."
+if ! su builder -c "apt-get -y source $PKG_NAME"; then
+  echo "Failed to fetch source for $PKG_NAME, trying generic 'php'..."
+  if ! su builder -c "apt-get -y source php"; then
+    echo "ERROR: Failed to fetch source for $PKG_NAME and for generic 'php'." >&2
+    exit 2
+  fi
+fi
+
+# Debug: print contents of temp directory after source fetch
+echo "Contents of $BUILDER_TMPDIR after apt-get source:" >&2
+ls -la "$BUILDER_TMPDIR" >&2
+
 
 # Move source tree to output dir
-SRC_DIR=$(find "$BUILDER_TMPDIR" -maxdepth 1 -type d -name "php*")
+# Sanitize SRC_DIR to remove newlines and extra whitespace
+SRC_DIR=$(find "$BUILDER_TMPDIR" -maxdepth 1 -type d -name "php*" | head -n 1 | tr -d '\n' | xargs)
 if [[ -z "$SRC_DIR" ]]; then
-  echo "Source directory not found for $PKG_NAME or php" >&2
-  ls -la "$BUILDER_TMPDIR"
+  echo "ERROR: Source directory not found for $PKG_NAME or php after apt-get source." >&2
+  echo "Contents of $BUILDER_TMPDIR:" >&2
+  ls -la "$BUILDER_TMPDIR" >&2
+  exit 3
+else
+  echo "Moving source directory: '$SRC_DIR' to '$OUT_DIR/'" >&2
+  mv "$SRC_DIR" "$OUT_DIR/"
 fi
-mv "$SRC_DIR" "$OUT_DIR/"
 # Clean up temp dir
 rm -rf "$BUILDER_TMPDIR"
-mv "$SRC_DIR" "$OUT_DIR/"
