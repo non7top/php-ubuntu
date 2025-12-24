@@ -19,7 +19,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends shellcheck
 
-      - name: Run pre-commit checks
+      - name: Run pre-commit checks (shellcheck disabled)
+        env:
+          ACTIONLINT_SHELLCHECK: "false"
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files

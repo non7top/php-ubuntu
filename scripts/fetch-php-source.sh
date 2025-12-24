@@ -43,9 +43,11 @@ done
 
 apt-get update
 
+
 # Create a non-root user for apt-get source to avoid _apt warning
 useradd -m builder
-chown -R builder:builder .
+# Only chown the current working directory (not system dirs)
+chown -R builder:builder "$PWD"
 
 # Try to fetch version-specific source package, fallback to generic 'php', as non-root
 PKG_NAME="php${PHP_VER}"
