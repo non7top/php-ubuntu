@@ -82,16 +82,17 @@ ls -la "$BUILDER_TMPDIR" >&2
 
 
 # Move source tree to output dir
-# Sanitize SRC_DIR to remove newlines and extra whitespace
-SRC_DIR=$(find "$BUILDER_TMPDIR" -maxdepth 1 -type d -name "php*" | head -n 1 | tr -d '\n' | xargs)
+# Find the actual PHP source directory (not the temp dir itself)
+SRC_DIR=$(find "$BUILDER_TMPDIR" -mindepth 1 -maxdepth 1 -type d -name "php*")
+SRC_DIR=$(echo "$SRC_DIR" | head -n 1 | tr -d '\n' | xargs)
 if [[ -z "$SRC_DIR" ]]; then
   echo "ERROR: Source directory not found for $PKG_NAME or php after apt-get source." >&2
   echo "Contents of $BUILDER_TMPDIR:" >&2
   ls -la "$BUILDER_TMPDIR" >&2
   exit 3
 else
-  echo "Moving source directory: '$SRC_DIR' to '$OUT_DIR/'" >&2
-  mv "$SRC_DIR" "$OUT_DIR/"
+  echo "Copying source directory: '$SRC_DIR' to '$OUT_DIR/'" >&2
+  cp -a "$SRC_DIR" "$OUT_DIR/"
 fi
 # Clean up temp dir
 rm -rf "$BUILDER_TMPDIR"

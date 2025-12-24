@@ -43,8 +43,23 @@ jobs:
       - name: Build PHP
         run: |
           mkdir -p artifacts/${{ matrix.distro }}/${{ matrix.php }}
+          echo "== Directory listing before source copy =="
+          ls -l artifacts/source || true
           if [ "${{ matrix.distro }}" != "jammy" ] && [ -d artifacts/source ]; then
             cp -r artifacts/source/php* .
+          fi
+          echo "== Directory listing after source copy =="
+          ls -l php* || true
+          # Fail if no source directory is present (POSIX-compliant check)
+          if [ "${{ matrix.distro }}" != "jammy" ]; then
+            found=0
+            for d in php*; do
+              if [ -d "$d" ]; then found=1; fi
+            done
+            if [ "$found" -eq 0 ]; then
+              echo "ERROR: No PHP source directory found after copy!" >&2
+              exit 1
+            fi
           fi
           bash scripts/build-php.sh "${{ matrix.distro }}" "${{ matrix.php }}" "artifacts/${{ matrix.distro }}/${{ matrix.php }}"
 
